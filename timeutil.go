@@ -3,9 +3,11 @@
 // 8601 dates.
 package timeutil
 
-import "time"
+import (
+	"time"
+)
 
-// TODO: provide different 'schemes', like 4-5-4 and 5-4-4.
+// TODO(eric): provide different 'schemes', like 4-5-4 and 5-4-4.
 
 // Direction tells NthWeekday whether to move forwards or backwards to find
 // dates.
@@ -22,6 +24,8 @@ const (
 	Either
 )
 
+const daysPerWeek = 7
+
 //go:generate stringer -type=Direction
 
 func absmin(a, b int) int {
@@ -37,44 +41,56 @@ func absmin(a, b int) int {
 	return b
 }
 
-// NthWeekday returns the nth instance of the given weekday, starting at t. If
-// n == 0 and t.Weekday() == day, t will not be changed.
+// NthWeekday returns the "nth" instance of the given weekday, starting at t.
+// n is zero-indexed, meaning n == 0 is the current week, n == 1 is the next
+// week, n == 2 is the following, etc.
+//
+// Special cases are:
+//
+//  NthWeekday(t, day,                n < 0,  d) = t
+//  NthWeekday(t, day == t.Weekday(), n == 0, d) = t
+//
+// If d is not a valid Direction, t is returned.
 func NthWeekday(t time.Time, day time.Weekday, n int, d Direction) time.Time {
 	if n < 0 {
 		return t
 	}
 
 	wkd := t.Weekday()
+
+	// Fast case: we're advancing to the same day of the week, so we can simply
+	// advance forward (or backwards) n weeks.
 	if wkd == day {
+		// n*±daysPerWeek handles the case of n == 0.
 		if d == Backward {
-			return t.AddDate(0, 0, n*-7)
+			return t.AddDate(0, 0, n*-daysPerWeek)
 		}
 		// d == Either has no sane representation, so just move forward.
-		return t.AddDate(0, 0, n*7)
+		return t.AddDate(0, 0, n*daysPerWeek)
 	}
 
 	incr := int(day - wkd)
 	switch d {
 	case Forward:
-		incr += 7
-		if n > 0 {
-			n = (n - 1) * 7
+		incr += daysPerWeek
+		if n != 0 {
+			n = (n - 1) * daysPerWeek
 		}
 	case Backward:
-		incr -= 7
-		if n > 0 {
-			n = (n - 1) * -7
+		incr -= daysPerWeek
+		if n != 0 {
+			n = (n - 1) * -daysPerWeek
 		}
 	case Either:
-		incr = absmin(incr+7, incr-7)
+		incr = absmin(incr+daysPerWeek, incr-daysPerWeek)
 		if incr > 0 {
-			n = (n - 1) * 7
+			n = (n - 1) * daysPerWeek
 		} else {
-			n = (n - 1) * -7
+			n = (n - 1) * -daysPerWeek
 		}
 	}
 
-	incr %= 7
+	incr %= daysPerWeek
 	incr += n
 	return t.AddDate(0, 0, incr)
 }

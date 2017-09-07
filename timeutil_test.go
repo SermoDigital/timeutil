@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var days = func() (days [100]time.Weekday) {
+var days = func() (days [1000]time.Weekday) {
 	for i := range days {
 		// Intn is [0, n)
 		days[i] = time.Weekday(rand.Intn(int(time.Saturday) + 1))
@@ -60,7 +60,7 @@ func testNext(t *testing.T, tm time.Time, i int, d Direction) time.Time {
 		}
 	}
 	if err != nil {
-		t.Fatalf("#%d: %s\n--> NthWeekday(%s [%s], %s, %d, %s): got %s [%s]",
+		t.Fatalf("#%d: %s\n-> NthWeekday(%s [%s], %s, %d, %s): got %s [%s]",
 			i, err,
 			tfmt{tm}, tm.Weekday(), day, n, d,
 			tfmt{next}, next.Weekday())
@@ -124,7 +124,7 @@ func TestBounds(t *testing.T) {
 
 			tm := time.Date(test.year, time.Month(i), r, 0, 0, 0, 0, time.UTC)
 			start, end := Bounds(tm)
-			t.Logf("%s: %s --> [%s, %s]\n",
+			t.Logf("%s: %s -> [%s, %s]\n",
 				time.Month(i), tfmt{tm}, tfmt{start}, tfmt{end})
 			if !start.Equal(bs.start) || !end.Equal(bs.end) {
 				t.Fatalf("#%d: %s: wanted (%s, %s), got (%s, %s)",
